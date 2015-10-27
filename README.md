@@ -4,7 +4,11 @@ A simple way to create dropdown filters for DataTables' columns
 ##Usage
 This plugin allows you to add an additional options to **colDefs** when initializing your DataTable. These options should all fall into a single object given the key **filter**.
 
-Example:
+##Requirements
+  - jQuery
+  - DataTables v1.10 or greater (v1.10.8 or greater highly recommended for performance reasons)
+
+####Example:
 ```
 var dt = $('#table').dataTable({ 
     //... other DataTable options
@@ -12,13 +16,31 @@ var dt = $('#table').dataTable({
         {
             targets:[0],
             filter: {
-                //... dropdown filter settings for column 0
+                name: "Column0DropDown",
+				label: "Column0Label",
+				id: "column0_drpdwn",
+				after: 'f',
+				first: {value: null, title: "Show all"},
+				source: {"Value0": "Title0", "Value1": "Title1", "Value2": "Title2"}
             }
         },
         {
             targets:[1],
             filter: {
-                //... dropdown settings for column 1
+                name: "Column1DropDown",
+				label: "Column1Label",
+				class: "column-drpdwn",
+				id: "column1_drpdwn",
+				before: '#table-filter-wrapper',
+				first: {value: null, title: "Show all"},
+				source: {
+					url: "/path/to/json/data",
+					type: "POST",
+					dataType: "JSON",
+					success:function(response){
+						console.log("Dropdown created - data:",response);
+					}
+				}
             }
         },
     ],
@@ -27,17 +49,18 @@ var dt = $('#table').dataTable({
 
 ##Options
 - source
-  - array, AJAX object or string
+  - array/object, AJAX object, anonymous function or string
   - the data used to generate the <option> node's within the dropdown
-  - if an array is given, the array data will be used, assuming each array key => value pair as the value and title, respectively, for each <option>
-  - if an object is given, it will be called as the argument to jQuery's .ajax() function, and should define any appropriate AJAX options
+  - if an array or object with key=>value pairs is given, the array data will be used, assuming each array key => value pair as the value and title, respectively, for each <option>
+    - you may also use an object with **value** and **title** keys to define each <option>'s properties which will be used instead of inferring directly from the array/object's key/value pairs
+  - if an object containing AJAX parameters is given, it will be called as the argument to jQuery's .ajax() function, and should define any appropriate AJAX options
     - a JSON string is expected as the return to the AJAX function, which will be turned into <option> nodes with JSON key => value pairs turned into <option value="{key}">{value}</option>
     - you may specify a callback function as the success option to the AJAX object, which will be called after the <option> nodes have been created
   - if a string is given, it is assumed to be an AJAX URL which returns JSON data that will be turned into <option> nodes
 
-  -examples:
+  - examples:
   ```
-    // Using an array for the data source \\
+    // Using a regular key=>value array for the data source \\
     
     var dt = $('#table').dataTable({ 
         //... other DataTable options
@@ -47,7 +70,7 @@ var dt = $('#table').dataTable({
                 filter: {
                     name: 'Column0DropDown',
                     label: 'Column0',
-                    source: ['Option0Value','Option1Value','Option2Value'],
+                    source: ['Option0Title', 'Option1Title', 'Option2Title'],
                     //...
                 }
             },
@@ -57,17 +80,139 @@ var dt = $('#table').dataTable({
     //Creates:
     <label>Column0
         <select name="Column0DropDown">
-            <option value="0">Option0Value</option>
-            <option value="1">Option1Value</option>
-            <option value="2">Option2Value</option>
+            <option value="0">Option0Title</option>
+            <option value="1">Option1Title</option>
+            <option value="2">Option2Title</option>
         </select>
     </label>
     
+	///////////////////////////////////
+	
+    // Using a single object for the data source \\
+    
+    var dt = $('#table').dataTable({ 
+        //... other DataTable options
+        columnDefs:[
+            {
+                targets:[0],
+                filter: {
+                    name: 'Column0DropDown',
+                    label: 'Column0',
+                    source: {'Option0Value':'Option0Title', 'Option1Value':'Option1Title, 'Option2Value':'Option2Title'},
+                    //...
+                }
+            },
+        ],
+    });
+    
+    //Creates:
+    <label>Column0
+        <select name="Column0DropDown">
+            <option value="Option0Value">Option0Title</option>
+            <option value="Option1Value">Option1Title</option>
+            <option value="Option2Value">Option2Title</option>
+        </select>
+    </label>
+    
+	///////////////////////////////////
+	
+    // Using an array of objects for the data source \\
+    
+    var dt = $('#table').dataTable({ 
+        //... other DataTable options
+        columnDefs:[
+            {
+                targets:[0],
+                filter: {
+                    name: 'Column0DropDown',
+                    label: 'Column0',
+                    source: [{value:'Option0Value',title:'Option0Title'}, {value:'Option1Value',title:'Option1Title}, {value:'Option2Value',title:'Option2Title'}],
+                    //...
+                }
+            },
+        ],
+    });
+    
+    //Creates:
+    <label>Column0
+        <select name="Column0DropDown">
+            <option value="Option0Value">Option0Title</option>
+            <option value="Option1Value">Option1Title</option>
+            <option value="Option2Value">Option2Title</option>
+        </select>
+    </label>
+    
+	///////////////////////////////////
+	
+    // Using an AJAX URL for the data source which returns JSON \\
+    
+    var dt = $('#table').dataTable({ 
+        //... other DataTable options
+        columnDefs:[
+            {
+                targets:[0],
+                filter: {
+                    name: 'Column0DropDown',
+                    label: 'Column0',
+                    source: "/path/to/json/data",
+                    //...
+                }
+            },
+        ],
+    });
+    
+    //Creates:
+    <label>Column0
+        <select name="Column0DropDown">
+            <option value="Option0JsonValue">Option0JsonTitle</option>
+            <option value="Option1JsonValue">Option1JsonTitle</option>
+            <option value="Option2JsonValue">Option2JsonTitle</option>
+        </select>
+    </label>
+    
+	///////////////////////////////////
+	///////////////////////////////////
+	
+    // Using an AJAX object for the data source which returns JSON \\
+    
+    var dt = $('#table').dataTable({ 
+        //... other DataTable options
+        columnDefs:[
+            {
+                targets:[0],
+                filter: {
+                    name: 'Column0DropDown',
+                    label: 'Column0',
+                    source: {
+						url: "/path/to/json/data",
+						type: "POST",
+						dataType: "JSON",
+						success(response){
+							//.. anything defined in here will be called after the <option> nodes are created
+						}
+					},
+                    //...
+                }
+            },
+        ],
+    });
+    
+    //Creates:
+    <label>Column0
+        <select name="Column0DropDown">
+            <option value="Option0JsonValue">Option0JsonTitle</option>
+            <option value="Option1JsonValue">Option1JsonTitle</option>
+            <option value="Option2JsonValue">Option2JsonTitle</option>
+        </select>
+    </label>
+    
+	///////////////////////////////////
   ```
   
 - name
   - string
   - this will be the value given to the generated <select> node's **name** property
+  - if this option is within a columnDef containing > 1 target, the name will be turned into an array so they none are overwritten
 
 - label
   - string
